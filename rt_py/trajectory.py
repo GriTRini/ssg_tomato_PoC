@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.typing as npt
 from typing import Optional
-import rt_bind as _rtb
+import rt_py.rt_bind as _rtb
 
 class RobotModel(_rtb.RobotModel):
     """로봇 기구학 모델 정보를 관리하는 클래스"""
