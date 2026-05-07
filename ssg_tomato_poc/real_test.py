@@ -22,6 +22,7 @@ class AppleRobotController:
 
         # 시퀀스 제어 변수
         self.current_step = 1
+        self.cycle_count = 1  # 현재 반복 횟수 카운터
         self.is_running = True
         
         # 주요 위치 정보
@@ -30,7 +31,7 @@ class AppleRobotController:
         self.q_step10 = np.array([45.0, -30.0, -50.0, 10.0, -80.0, 0.0])
         
         # 데이터 로그
-        self.history = {"time": [], "q": [], "pos": [], "mode": []}
+        self.history = {"time": [], "q": [], "pos": [], "mode": [], "cycle": []}
         self.start_time = 0.0
 
     def log_data(self, mode_id):
@@ -39,9 +40,11 @@ class AppleRobotController:
         self.history["q"].append(self.robot.angles.copy())
         self.history["pos"].append(self.robot.tmat[:3, 3].copy())
         self.history["mode"].append(mode_id)
+        self.history["cycle"].append(self.cycle_count)
 
     def run(self):
-        print("🤖 [Sequence Control] 사과 피킹 및 슬라이싱 시퀀스 시작 (상태 머신 모드)")
+        print("🤖 [Sequence Control] 사과 피킹 및 슬라이싱 시퀀스 무한 반복 시작 (상태 머신 모드)")
+        print("정지하려면 터미널에서 Ctrl+C를 누르세요.")
         
         try:
             if not self.robot.open_connection(self.robot_ip):
@@ -66,106 +69,103 @@ class AppleRobotController:
                 # 1. 목표 도달 확인 (임계값 설정: 관절 0.1도, 위치 2mm)
                 if self.robot.get_goal_reached(q_th=0.1, p_th=0.002):
                     
-                    target_tmat = None
-                    target_q = None
-                    msg = ""
-                    next_step = self.current_step
-
                     # --- 시퀀스 로직 분기 ---
                     
                     # [Step 1] 홈포인트 이동
                     if self.current_step == 1:
-                        target_q = self.q_home
-                        msg = "홈포인트 이동"
-                        next_step = 2
+                        print(f"🔄 [사이클 {self.cycle_count}] ▶ [Step 1] 홈포인트 이동")
+                        self.robot.trapj(self.q_home)
+                        self.current_step = 2
 
                     # [Step 2] 피킹 위치 하강
                     elif self.current_step == 2:
+                        print(f"  ▶ [Step 2] 사과 피킹 위치 하강 (Z-0.1)")
                         target_tmat = self.robot.tmat.copy()
                         target_tmat[2, 3] -= 0.1
-                        msg = "사과 피킹 위치 하강 (Z-0.1)"
-                        next_step = 3
+                        self.robot.attrl(target_tmat, kp=100.0)
+                        self.current_step = 3
 
                     # [Step 3] 홈 복귀
                     elif self.current_step == 3:
-                        target_q = self.q_home
-                        msg = "피킹 후 홈 복귀"
-                        next_step = 4
+                        print(f"  ▶ [Step 3] 피킹 후 홈 복귀")
+                        self.robot.trapj(self.q_home)
+                        self.current_step = 4
 
-                    # [Step 4] 지그 방향 회전
+                    # [Step 4] 지그 위 대기 위치
                     elif self.current_step == 4:
-                        target_q = self.q_home.copy()
-                        target_q[0] = -270.0
-                        msg = "지그 방향 조인트 회전"
-                        next_step = 5
+                        print(f"  ▶ [Step 4] 지그 위 대기 위치 이동")
+                        q_zig = np.array([-215.6, -19.69, -75.06, -6.62, -78.11, 0.0])
+                        self.robot.trapj(q_zig)
+                        self.current_step = 5
 
-                    # [Step 5] 지그 위 대기 위치
+                    # [Step 5] 지그 안착 (통합 하강)
                     elif self.current_step == 5:
-                        target_q = self.q_step5.copy()
-                        target_q[1] -= 10.0
-                        target_q[2] += 15.0
-                        msg = "지그 위 대기 위치 이동"
-                        next_step = 6
-
-                    # [Step 6 & 7] 지그 안착 (통합 하강)
-                    elif self.current_step == 6:
+                        print(f"  ▶ [Step 5] 지그 위 사과 안착 (Z-0.1)")
                         target_tmat = self.robot.tmat.copy()
                         target_tmat[2, 3] -= 0.1 
-                        msg = "지그 위 사과 안착 (Z-0.1)"
-                        next_step = 8
+                        self.robot.attrl(target_tmat, kp=100.0)
+                        self.current_step = 6
 
-                    # [Step 8] 90도 회전 피킹 위치 이동 및 상승
+                    # [Step 6] 90도 회전 피킹 위치 이동
+                    elif self.current_step == 6:
+                        print(f"  ▶ [Step 6] 90도 회전 피킹 위치 이동")
+                        q_zig_90deg = np.array([-215.6, -19.69, -75.06, -6.62, -78.11, 0.0])
+                        self.robot.trapj(q_zig_90deg)
+                        self.current_step = 7
+
+                    # [Step 7] 90도 회전 피킹 진행
+                    elif self.current_step == 7:
+                        print(f"  ▶ [Step 7] 90도 회전 피킹 진행")
+                        target_tmat = self.robot.tmat.copy()
+                        target_tmat[1, 3] -= 0.1
+                        self.robot.attrl(target_tmat, kp=100.0)
+                        self.current_step = 8
+
+                    # [Step 8] 90도 회전 피킹 후 상승
                     elif self.current_step == 8:
-                        target_q = self.q_step5
-                        msg = "90도 회전 피킹 지점 이동"
-                        next_step = 8.1
-
-                    elif self.current_step == 8.1:
+                        print(f"  ▶ [Step 8] 피킹 후 상승 (Z+0.1)")
                         target_tmat = self.robot.tmat.copy()
                         target_tmat[2, 3] += 0.1
-                        msg = "피킹 후 상승 (Z+0.1)"
-                        next_step = 9
+                        self.robot.attrl(target_tmat, kp=100.0)
+                        self.current_step = 9
 
                     # [Step 9] 6번 조인트 90도 회전
                     elif self.current_step == 9:
+                        print(f"  ▶ [Step 9] +90도 6번 조인트 회전")
                         target_q = self.robot.angles.copy()
                         target_q[5] += 90.0
-                        msg = "+90도 6번 조인트 회전"
-                        next_step = 10
+                        self.robot.trapj(target_q)
+                        self.current_step = 10
 
                     # [Step 10] 슬라이싱 위치 이동
                     elif self.current_step == 10:
-                        target_q = self.q_step10
-                        msg = "슬라이싱 위치 이동"
-                        next_step = 11
+                        print(f"  ▶ [Step 10] 슬라이싱 위치 이동")
+                        q_slice_trapj = np.array([-215.6, -19.69, -75.06, -6.62, -78.11, 0.0])
+                        self.robot.trapj(q_slice_trapj)
+                        self.current_step = 11
 
                     # [Step 11] 슬라이싱 동작
                     elif self.current_step == 11:
+                        print(f"  ▶ [Step 11] 슬라이싱 (Y-0.1)")
                         target_tmat = self.robot.tmat.copy()
-                        target_tmat[1, 3] += 0.1
-                        msg = "슬라이싱 (Y+0.1)"
-                        next_step = 12
-
-                    # [Step 12] 종료
-                    elif self.current_step == 12:
-                        print("✅ 모든 시퀀스 동작 완료!")
-                        self.is_running = False
-                        continue
-
-                    # --- 명령 전송 ---
-                    if target_q is not None:
-                        self.robot.trapj(target_q)
-                        print(f"  ▶ [Step {self.current_step}] {msg}")
-                    elif target_tmat is not None:
+                        target_tmat[1, 3] -= 0.1
                         self.robot.attrl(target_tmat, kp=100.0)
-                        print(f"  ▶ [Step {self.current_step}] {msg}")
-                    
-                    self.current_step = next_step
+                        self.current_step = 12
+
+                    # [Step 12] 반복 로직 처리
+                    elif self.current_step == 12:
+                        print(f"✅ [{self.cycle_count}번째 사이클] 시퀀스 동작 완료!\n")
+                        self.cycle_count += 1
+                        self.current_step = 1  # 1번 스텝으로 되돌려 무한 반복
+                        continue
 
                 # 실시간 데이터 로깅 (메인 루프에서 수행)
                 self.log_data(self.current_step)
                 time.sleep(0.002) # CPU 부하 감소를 위한 미세 대기
 
+        except KeyboardInterrupt:
+            print("\n🛑 사용자에 의해(Ctrl+C) 반복 시퀀스가 중단되었습니다.")
+            self.is_running = False
         except Exception as e:
             print(f"🚨 예외 발생: {e}")
         finally:
@@ -184,7 +184,8 @@ class AppleRobotController:
             "x": [p[0] for p in self.history["pos"]],
             "y": [p[1] for p in self.history["pos"]],
             "z": [p[2] for p in self.history["pos"]],
-            "mode": self.history["mode"]
+            "mode": self.history["mode"],
+            "cycle": self.history["cycle"]
         })
         df.to_csv("apple_sequence_statemachine_log.csv", index=False)
         print("💾 로그 저장 완료: apple_sequence_statemachine_log.csv")
