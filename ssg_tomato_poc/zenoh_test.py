@@ -31,11 +31,13 @@ def run_real_robot_detection_loop():
             try:
                 score = float(data[1])
                 mat_vals = list(map(float, data[2:18]))
+                print(mat_vals)
                 target_mat = np.array(mat_vals).reshape(4, 4)
                 
                 if score > max_score:
                     max_score = score
                     best_target_mat = target_mat
+                    print(best_target_mat)
                 
                 response_received = True
                 
@@ -47,8 +49,9 @@ def run_real_robot_detection_loop():
     # 2. 로봇 설정 및 초기화
     robot = create_robot("m1013")
     robot_ip = "192.168.1.30" 
-    home_q = np.array([-90.0, 0.0, -90.0, 0.0, -90.0, 0.0])
-    tcp_offset = [0.0, 0.029, 0.3819]
+    # home_q = np.array([-90.0, 0.0, -90.0, 0.0, -90.0, 0.0])
+    home_q = np.array([-86.96, -31.27, -59.55, -0.18, -89.7, 0.0])
+    tcp_offset = [-0.015, 0.0, 0.155]
     
     try:
         if not robot.open_connection(robot_ip): 
@@ -56,8 +59,8 @@ def run_real_robot_detection_loop():
         robot.connect_rt()
         
         tool_name = "Gripper_A"
-        weight = 5.19
-        cog = [10.780, 8.110, -15.430]
+        weight = 0.52
+        cog = [-13.45, -129.11, -151.82]
         inertia = [0.0] * 6 
         
         print(f"\n🔧 [{tool_name}] 툴 파라미터를 등록합니다.")
@@ -97,6 +100,7 @@ def run_real_robot_detection_loop():
                         robot.set_digital_output(8, False) # 초기화
                         max_score, response_received, best_target_mat = -1.0, False, None
                         print("\n🏠 홈 도달. [PICK] 물건 위치 탐색을 시작합니다...")
+                        print(robot.tmat)
                         current_step = 1
 
                     elif current_step == 1:
@@ -108,12 +112,12 @@ def run_real_robot_detection_loop():
                             pick_target = best_target_mat.copy() # 위치 저장
                             approach_pick = pick_target.copy()
                             approach_pick[2, 3] += 0.05
-                            robot.attrl(approach_pick, kp=500.0)
+                            robot.attrl(approach_pick, kp=100.0)
                             current_step = 2
 
                     elif current_step == 2:
                         print("⬇️ 물건을 잡기 위해 하강합니다.")
-                        robot.attrl(pick_target, kp=500.0)
+                        robot.attrl(pick_target, kp=100.0)
                         current_step = 3
 
                     elif current_step == 3:
@@ -126,7 +130,7 @@ def run_real_robot_detection_loop():
                         print("⬆️ 진공 완료! 물건을 잡고 10cm 상승합니다.")
                         lift_mat = pick_target.copy()
                         lift_mat[2, 3] += 0.10
-                        robot.attrl(lift_mat, kp=500.0)
+                        robot.attrl(lift_mat, kp=100.0)
                         current_step = 5
 
                     # ==========================================
@@ -154,7 +158,7 @@ def run_real_robot_detection_loop():
                             place_target = best_target_mat.copy() # 위치 저장
                             approach_place = place_target.copy()
                             approach_place[2, 3] += 0.15
-                            robot.attrl(approach_place, kp=500.0)
+                            robot.attrl(approach_place, kp=100.0)
                             current_step = 8
 
                     elif current_step == 8:
@@ -162,7 +166,7 @@ def run_real_robot_detection_loop():
                         place_target = best_target_mat.copy() # 위치 저장
                         place_target_1 = place_target.copy()
                         place_target_1[2, 3] += 0.07
-                        robot.attrl(place_target_1, kp=500.0)
+                        robot.attrl(place_target_1, kp=100.0)
                         current_step = 9
 
                     elif current_step == 9:
@@ -175,7 +179,7 @@ def run_real_robot_detection_loop():
                         print("⬆️ 공기 배출 완료! 5cm 상승합니다.")
                         retract_mat = place_target.copy()
                         retract_mat[2, 3] += 0.15
-                        robot.attrl(retract_mat, kp=500.0)
+                        robot.attrl(retract_mat, kp=100.0)
                         current_step = 11
 
                     # ==========================================
