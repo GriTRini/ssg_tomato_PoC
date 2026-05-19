@@ -1,0 +1,229 @@
+<?xml version="1.0"?>
+<robot name="m1013">
+
+  <material name="DoosanWhite"><color rgba="1.0 1.0 1.0 1.0"/></material>
+  <material name="DoosanBlue"><color rgba="0.0 0.2 0.6 1.0"/></material>
+
+  <link name="world"/>
+  <joint name="fixed" type="fixed">
+    <parent link="world"/>
+    <child link="base_0"/>
+  </joint>
+
+  <link name="base_0">
+    <inertial>
+      <mass value="3.722"/>
+      <origin xyz="-0.000025 -0.000854 0.026262" rpy="0 0 0"/>
+      <inertia ixx="0.008311" ixy="-0.000016" ixz="-0.000000" iyy="0.008034" iyz="-0.000001" izz="0.014502"/>
+    </inertial>
+    <visual>
+      <geometry><mesh filename="../m1013/visual/base.stl" scale="1 1 1"/></geometry>
+      <material name="DoosanWhite"/>
+    </visual>
+    <collision>
+      <geometry><mesh filename="../m1013/collision/base.stl" scale="1 1 1"/></geometry>
+    </collision>
+  </link>
+
+  <joint name="joint_1" type="revolute">
+    <parent link="base_0"/>
+    <child link="link_1"/>
+    <origin rpy="0 0 0" xyz="0 0 0.1525"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="1000" lower="-6.283" upper="6.283" velocity="1.571"/>
+    <dynamics damping="0.1" friction="0.5"/>
+  </joint>
+
+  <link name="link_1">
+    <inertial>
+      <mass value="7.446"/>
+      <origin xyz="0.000002 0.013897 0.002585" rpy="0 0 0"/>
+      <inertia ixx="0.038493" ixy="-0.000000" ixz="0.000002" iyy="0.034668" iyz="-0.000227" izz="0.027562"/>
+    </inertial>
+    <visual>
+      <geometry><mesh filename="../m1013/visual/link1.stl" scale="1 1 1"/></geometry>
+      <material name="DoosanWhite"/>
+    </visual>
+    <collision>
+      <geometry><mesh filename="../m1013/collision/link1.stl" scale="1 1 1"/></geometry>
+    </collision>
+  </link>
+
+  <joint name="joint_2" type="revolute">
+    <parent link="link_1"/>
+    <child link="link_2"/>
+    <origin rpy="0 -1.5708 -1.5708" xyz="0 0.0345 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="1000" lower="-1.658" upper="1.658" velocity="1.571"/>
+    <dynamics damping="0.1" friction="0.5"/>
+  </joint>
+
+  <link name="link_2">
+    <inertial>
+      <mass value="10.569"/>
+      <origin xyz="0.266472 0.000005 0.165814" rpy="0 0 0"/>
+      <inertia ixx="0.034551" ixy="-0.000013" ixz="0.000779" iyy="0.703166" iyz="-0.000001" izz="0.693952"/>
+    </inertial>
+    <visual>
+      <geometry><mesh filename="../m1013/visual/link2.stl" scale="1 1 1"/></geometry>
+      <material name="DoosanWhite"/>
+    </visual>
+    <collision>
+      <geometry><mesh filename="../m1013/collision/link2.stl" scale="1 1 1"/></geometry>
+    </collision>
+  </link>
+
+  <joint name="joint_3" type="revolute">
+    <parent link="link_2"/>
+    <child link="link_3"/>
+    <origin rpy="0 0 1.5708" xyz="0.62 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="1000" lower="-2.53" upper="2.53" velocity="1.571"/>
+    <dynamics damping="0.1" friction="0.5"/>
+  </joint>
+
+  <link name="link_3">
+    <inertial>
+      <mass value="3.614"/>
+      <origin xyz="-0.000001 -0.003177 0.017743" rpy="0 0 0"/>
+      <inertia ixx="0.011039" ixy="0.000001" ixz="-0.000000" iyy="0.007487" iyz="-0.000458" izz="0.009779"/>
+    </inertial>
+    <visual>
+      <geometry><mesh filename="../m1013/visual/link3.stl" scale="1 1 1"/></geometry>
+      <material name="DoosanWhite"/>
+    </visual>
+    <collision>
+      <geometry><mesh filename="../m1013/collision/link3.stl" scale="1 1 1"/></geometry>
+    </collision>
+  </link>
+
+  <joint name="joint_4" type="revolute">
+    <parent link="link_3"/>
+    <child link="link_4"/>
+    <origin rpy="1.5708 0 0" xyz="0 -0.559 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="1000" lower="-6.283" upper="6.283" velocity="1.571"/>
+    <dynamics damping="0.5" friction="0.2"/>
+  </joint>
+
+  <link name="link_4">
+    <inertial>
+      <mass value="1.5"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
+    </inertial>
+    <visual>
+      <geometry><mesh filename="../m1013/visual/link4.stl" scale="1 1 1"/></geometry>
+      <material name="DoosanWhite"/>
+    </visual>
+    <collision>
+      <geometry><mesh filename="../m1013/collision/link4.stl" scale="1 1 1"/></geometry>
+    </collision>
+  </link>
+
+  <joint name="joint_5" type="revolute">
+    <parent link="link_4"/>
+    <child link="link_5"/>
+    <origin rpy="-1.5708 0 0" xyz="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="1000" lower="-2.356" upper="2.356" velocity="1.571"/>
+    <dynamics damping="0.5" friction="0.2"/>
+  </joint>
+
+  <link name="link_5">
+    <inertial>
+      <mass value="1.2"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.01" ixy="0.0" ixz="0.0" iyy="0.01" iyz="0.0" izz="0.01"/>
+    </inertial>
+    <visual>
+      <geometry><mesh filename="../m1013/visual/link5.stl" scale="1 1 1"/></geometry>
+      <material name="DoosanWhite"/>
+    </visual>
+    <collision>
+      <geometry><mesh filename="../m1013/collision/link5.stl" scale="1 1 1"/></geometry>
+    </collision>
+  </link>
+
+  <joint name="joint_6" type="revolute">
+    <parent link="link_5"/>
+    <child link="link_6"/>
+    <origin rpy="1.5708 0 0" xyz="0 -0.121 0"/>
+    <axis xyz="0 0 1"/>
+    <limit effort="1000" lower="-6.283" upper="6.283" velocity="1.571"/>
+    <dynamics damping="0.5" friction="0.2"/>
+  </joint>
+
+  <link name="link_6">
+    <inertial>
+      <mass value="0.9"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia ixx="0.005" ixy="0.0" ixz="0.0" iyy="0.005" iyz="0.0" izz="0.005"/>
+    </inertial>
+    <visual>
+      <geometry><mesh filename="../m1013/visual/link6.stl" scale="1 1 1"/></geometry>
+      <material name="DoosanBlue"/>
+    </visual>
+    <collision>
+      <geometry><mesh filename="../m1013/collision/link6.stl" scale="1 1 1"/></geometry>
+    </collision>
+  </link>
+
+  <gazebo>
+    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+      <joint_name>joint_1</joint_name>
+      <topic>/model/m1013/joint/joint_1/cmd_pos</topic>
+      <p_gain>500.0</p_gain>
+      <i_gain>0.0</i_gain>
+      <d_gain>10.0</d_gain>
+    </plugin>
+    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+      <joint_name>joint_2</joint_name>
+      <topic>/model/m1013/joint/joint_2/cmd_pos</topic>
+      <p_gain>500.0</p_gain>
+      <i_gain>0.0</i_gain>
+      <d_gain>50.0</d_gain>
+    </plugin>
+    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+      <joint_name>joint_3</joint_name>
+      <topic>/model/m1013/joint/joint_3/cmd_pos</topic>
+      <p_gain>500.0</p_gain>
+      <i_gain>0.0</i_gain>
+      <d_gain>50.0</d_gain>
+    </plugin>
+    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+      <joint_name>joint_4</joint_name>
+      <topic>/model/m1013/joint/joint_4/cmd_pos</topic>
+      <p_gain>500.0</p_gain>
+      <i_gain>0.0</i_gain>
+      <d_gain>50.0</d_gain>
+    </plugin>
+    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+      <joint_name>joint_5</joint_name>
+      <topic>/model/m1013/joint/joint_5/cmd_pos</topic>
+      <p_gain>500.0</p_gain>
+      <i_gain>0.0</i_gain>
+      <d_gain>50.0</d_gain>
+    </plugin>
+    <plugin filename="gz-sim-joint-position-controller-system" name="gz::sim::systems::JointPositionController">
+      <joint_name>joint_6</joint_name>
+      <topic>/model/m1013/joint/joint_6/cmd_pos</topic>
+      <p_gain>500.0</p_gain>
+      <i_gain>0.0</i_gain>
+      <d_gain>50.0</d_gain>
+    </plugin>
+
+    <plugin filename="gz-sim-joint-state-publisher-system" name="gz::sim::systems::JointStatePublisher">
+      <topic>/model/m1013/joint_states</topic>
+    </plugin>
+  </gazebo>
+
+  <gazebo reference="base_0"><material>Gazebo/White</material></gazebo>
+  <gazebo reference="link_1"><material>Gazebo/White</material></gazebo>
+  <gazebo reference="link_2"><material>Gazebo/White</material></gazebo>
+  <gazebo reference="link_3"><material>Gazebo/White</material></gazebo>
+  <gazebo reference="link_4"><material>Gazebo/White</material></gazebo>
+  <gazebo reference="link_5"><material>Gazebo/White</material></gazebo>
+  <gazebo reference="link_6"><material>Gazebo/Blue</material></gazebo>
+
+</robot>

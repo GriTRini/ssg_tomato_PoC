@@ -13,8 +13,9 @@ class AppleRobotController:
         self.robot = create_robot("m1013")
         self.robot_ip = "192.168.1.30"
         self.CONTROL_DT = 0.001  # 1ms 제어 주기
-        
-        self.tcp_params = [0.0, 0.0, 0.25, 0.0, 0.0, 0.0]
+
+        # self.tcp_params = [0.0, 0.0, 0.25, 0.0, 0.0, 0.0]
+        self.tcp_params = [0.0, 0.0, 0.255, 0.0, 0.0, 0.0]
         self.tool_info = {
             "name": "Gripper_3kg",
             "weight": 0.62,
@@ -41,10 +42,11 @@ class AppleRobotController:
             sys.exit(1)
 
         self.best_target_mat = None
+        self.transform_vals = None
         self.max_score = -1.0
         self.response_received = False
         self.request_sent = False
-        self.q_home = np.array([-86.96, -31.27, -59.55, -0.18, -89.7, 0.0])
+        self.q_home = np.array([-90.0, 0.0, -90.0, 0.0, -90.0, 0.0])
 
     def zenoh_callback(self, sample):
         payload = sample.payload.to_string()
@@ -53,6 +55,9 @@ class AppleRobotController:
             try:
                 score = float(data[1])
                 mat_vals = list(map(float, data[2:18]))
+                self.transform_vals = list(map(float, data[18:27]))
+                print(mat_vals)
+                print(self.transform_vals)
                 target_mat = np.array(mat_vals).reshape(4, 4)
                 if score > self.max_score:
                     self.max_score = score
@@ -108,14 +113,13 @@ class AppleRobotController:
 
                         elif self.current_step == 2:
                             if not self.response_received:
-                                print("📡 비전 타겟 요청 중...")
+                                # print("📡 비전 타겟 요청 중...")
                                 self.z_pub_req.put(" ".join(map(str, self.robot.flange_tmat.flatten())))
                                 self.robot.set_digital_output(8, False)
                                 # self.response_received = True
 
                             elif self.response_received:
                                 print("✅ 타겟 확인. 타겟 기울기에 맞춘 Approach 이동")
-                                
                                 # 1. 타겟의 로컬 좌표계 기준 변위 행렬 생성 (Z축으로 -0.05m 이동)
                                 # (일반적으로 접근은 타겟의 Z축 반대 방향이므로 -0.05를 사용하거나, 
                                 # 인식기 설정에 따라 +0.05를 사용하세요.)
@@ -126,115 +130,148 @@ class AppleRobotController:
                                 # 2. 행렬 곱을 통해 베이스 좌표계 기준의 새로운 위치 계산
                                 # [Base_T_Target] * [Target_T_Approach] = [Base_T_Approach]
                                 app_pick = self.best_target_mat @ offset_mat
-                                
-                                # self.robot.attrl(app_pick, kp=200.0)
-                                # test_pick = self.robot.tmat.copy()
-                                # test_pick[2, 3] -= 0.05
-                                # self.robot.attrl(test_pick, kp=200.0)
-                                # pick_target = self.best_target_mat.copy()
-                                # approach_pick = pick_target.copy()
-                                # approach_pick = self.robot.tmat.copy()
-                                # approach_pick[2, 3] -= 0.05
-                                self.robot.attrl(app_pick, kp=500.0)
-                                # self.wait_count = int(self.step_interval / self.CONTROL_DT)
+
+                                self.robot.attrl(app_pick, kp=700.0)
+                                # target_tmat = self.robot.tmat.copy()
+                                # target_tmat[2, 3] -= 0.05
+                                # self.robot.attrl(target_tmat, kp=300.0)
                                 self.current_step = 2.1
 
                         elif self.current_step == 2.1:
                             print("⬇️ 피킹 위치 하강")
-                            self.robot.attrl(self.best_target_mat, kp=500.0)
-                            # self.wait_count = int(self.step_interval / self.CONTROL_DT)
+                            self.robot.attrl(self.best_target_mat, kp=700.0)
+                            self.current_step = 2.2
+                        
+                        elif self.current_step == 2.2:
+                            print("석션 ON")
                             self.robot.set_digital_output(8, True)
+                            self.wait_count = int(1 / self.CONTROL_DT)
                             self.current_step = 3
 
                         elif self.current_step == 3:
                             print("들기")
-                            self.robot.trapj(self.q_home)
-                            self.wait_count = int(self.step_interval / self.CONTROL_DT)
-                            self.current_step = 4
+                            # self.robot.trapj(self.q_home)
+                            target_tmat = self.robot.tmat.copy()
+                            target_tmat[2, 3] += 0.2
+                            self.robot.attrl(target_tmat, kp=200.0)
+                            if self.robot.get_digital_input(12):
+                                self.current_step = 4 
+                                print("go go")
+                            else:
+                                self.current_step = 1
+                                print("back home")
 
                         elif self.current_step == 4:
                             print("지그 위치 이동")
-                            q_zig_1 = np.array([-259.35, -26.67, -67.6, 4.74, -85.36, 0.0])
+                            q_zig_1 = np.array([-256.98, -27.68, -63.23, 0.25, -89.08, 0.0])
                             self.robot.trapj(q_zig_1)
-                            self.wait_count = int(2 / self.CONTROL_DT)
-                            self.current_step = 4.1
-
-                        elif self.current_step == 4.1:
-                            print("지그로 하강")
-                            target_tmat = self.robot.tmat.copy()
-                            target_tmat[2, 3] -= 0.07
-                            self.robot.attrl(target_tmat, kp=500.0)
                             self.current_step = 4.2
+                            
+                            
 
                         elif self.current_step == 4.2:
+                            # [3] 회전이 완벽히 끝난 상태에서만 하강 명령 수행
+                            self.wait_count = int(1 / self.CONTROL_DT)
+                            print("떨어녔누?", self.robot.get_digital_input(12))
+                            if self.robot.get_digital_input(12):
+                                print("⬇️ 지그로 하강 시작")
+                                target_tmat = self.robot.tmat.copy()
+                                target_tmat[2, 3] -= 0.1
+                                self.robot.attrl(target_tmat, kp=700.0)
+                                # 명령 전달 시간 확보
+                                self.current_step = 4.3
+                            else:
+                                self.current_step = 1
+                                print("back home")
+                            
+                        elif self.current_step == 4.3:
                             print("사과 떨어뜨리기")
                             self.robot.set_digital_output(8, False)
+                            self.robot.set_digital_output(9, True)
+                            self.robot.set_digital_output(9, False)
                             self.current_step = 5
 
                         elif self.current_step == 5:
                             print("놓고 상승 및 후퇴")
                             target_tmat = self.robot.tmat.copy()
                             target_tmat[2, 3] += 0.1
-                            self.robot.attrl(target_tmat, kp=500.0)
+                            self.robot.attrl(target_tmat, kp=700.0)
                             self.current_step = 5.11
 
                         elif self.current_step == 5.11:
                             print("놓고 상승 및 후퇴")
                             target_tmat = self.robot.tmat.copy()
                             target_tmat[1, 3] += 0.4
-                            self.robot.attrl(target_tmat, kp=500.0)
+                            self.robot.attrl(target_tmat, kp=700.0)
                             self.current_step = 5.1
 
                         elif self.current_step == 5.1:
                             print("90도 접근")
                             q_zig_90deg = np.array([-246.74, -21.1, -139.97, 21.15, 74.06, -90.0])
                             self.robot.trapj(q_zig_90deg)
-                            self.wait_count = int(1 / self.CONTROL_DT)
+                            # self.wait_count = int(1 / self.CONTROL_DT)
                             self.current_step = 5.2
 
                         elif self.current_step == 5.2:
                             print("90도 회전 잡으로 가기")
                             target_tmat = self.robot.tmat.copy()
                             target_tmat[1, 3] -= 0.04
-                            self.robot.attrl(target_tmat, kp=500.0)
+                            self.robot.attrl(target_tmat, kp=700.0)
                             self.current_step = 5.3
 
                         elif self.current_step == 5.3:
                             print("90도 회전 후 잡기")
                             self.robot.set_digital_output(8, True)
+                            self.wait_count = int(1 / self.CONTROL_DT)
                             self.current_step = 5.4
+                            
 
                         elif self.current_step == 5.4:
                             print("잡은 후 상승")
                             target_tmat = self.robot.tmat.copy()
                             target_tmat[2, 3] += 0.1
-                            self.robot.attrl(target_tmat, kp=500.0)
-                            self.current_step = 5.5
+                            self.robot.attrl(target_tmat, kp=700.0)
+                            if self.robot.get_digital_input(12):
+                                self.current_step = 5.5
+                            else:
+                                self.current_step = 5.1
 
                         elif self.current_step == 5.5:
+                            print("슬라이싱 대기(우측이동 및 후퇴)")
                             target_tmat = self.robot.tmat.copy()
                             target_tmat[0, 3] -= 0.3
-                            target_tmat[2, 3] -= 0.1
-                            self.robot.attrl(target_tmat, kp=500.0)
+                            target_tmat[2, 3] -= 0.08
+                            self.robot.attrl(target_tmat, kp=700.0)
                             self.current_step = 5.6
 
                         elif self.current_step == 5.6:
+                            print("6번 조인트 90도 회전")
                             target_angles = self.robot.angles.copy()
                             target_angles[5] += 90
                             self.robot.trapj(target_angles)
                             self.current_step = 5.7
 
                         elif self.current_step == 5.7:
+                            print("슬라이싱 밀기")
                             target_tmat = self.robot.tmat.copy()
-                            target_tmat[1, 3] -= 0.2
-                            self.robot.attrl(target_tmat, kp=500.0)
+                            target_tmat[1, 3] -= 0.25
+                            self.robot.attrl(target_tmat, kp=700.0)
                             self.current_step = 5.8
 
                         elif self.current_step == 5.8:
+                            print("사과 놓기")
+                            self.robot.set_digital_output(8, False)
+                            self.robot.set_digital_output(9, True)
+                            self.robot.set_digital_output(9, False)
+                            self.current_step = 5.9
+                        
+                        elif self.current_step == 5.9:
+                            print("전체 들기")
                             target_tmat = self.robot.tmat.copy()
                             target_tmat[2, 3] += 0.4
-                            self.robot.attrl(target_tmat, kp=500.0)
+                            self.robot.attrl(target_tmat, kp=700.0)
                             self.current_step = 1
+
 
                 # [3] 로깅 및 다음 루프 시간 계산
                 self.log_data(start_time)
@@ -274,16 +311,6 @@ class AppleRobotController:
         file_name = "apple_rt_log.csv"
         df_final.to_csv(file_name, index=False)
         print(f"✅ 데이터가 '{file_name}'에 저장되었습니다. (컬럼: {list(df_final.columns)})")
-
-        # 6. 그래프 출력 (Z축 프로파일)
-        plt.figure(figsize=(10, 5))
-        plt.plot(df_final["time"], df_final["pos_z"], label='Z-axis')
-        plt.title("RT Z-Axis Profile")
-        plt.xlabel("Time (s)")
-        plt.ylabel("Position (m)")
-        plt.grid(True)
-        plt.legend()
-        plt.show()
 
 if __name__ == "__main__":
     controller = AppleRobotController()
