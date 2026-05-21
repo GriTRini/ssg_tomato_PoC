@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.typing as npt
 from typing import Optional
-import rt_py.rt_bind as _rtb
+import rt_bind as _rtb
 
 class RobotModel(_rtb.RobotModel):
     """로봇 기구학 모델 정보를 관리하는 클래스"""
@@ -31,8 +31,8 @@ class TrajGenerator(_rtb.TrajGenerator):
     def trapj(self, goal_q: npt.NDArray, goal_dq: Optional[npt.NDArray] = None) -> bool:
         return super().trapj(goal_q, goal_dq)
 
-    def attrl(self, goal_tmat: npt.NDArray, kp: float = 50.0) -> bool:
-        return super().attrl(goal_tmat, kp)
+    def attrl(self, goal_tmat: npt.NDArray, kp: float = 50.0, target_speed: float = 0.20) -> bool:
+        return super().attrl(goal_tmat, kp, target_speed)
 
     def align_to_floor(self, yaw_deg: float = 0.0, kp: float = 100.0) -> bool:
         return super().align_to_floor(yaw_deg, kp)
